@@ -41,6 +41,7 @@ class Report(db.Model):
     org_time_spent = db.Column(db.Integer, nullable=False)
     family_meetings = db.Column(db.Boolean, default=False)
     date_posted = db.Column(db.DateTime, default=db.func.current_timestamp())
+
 class Branch(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
