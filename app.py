@@ -28,7 +28,6 @@ class User(db.Model):
     role = db.Column(db.String(50), nullable=False)  
    
 
-
 class Report(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -70,22 +69,25 @@ def P_register():
         standard = request.form.get('standard')
         password = request.form.get('password')
 
-        # Validate dropdown values
-        valid_branches = ["North", "South", "East", "West"]
-        valid_standards = ["Beginner", "Intermediate", "Advanced"]
+        # Define valid branches and standards
+        valid_branches = [
+            "Central", "NRW", "Berlin", "Hessen", "Bremen", 
+            "Hamburg", "Greater Germany", "Bravaria", "Women"
+        ]
+        valid_standards = ["Member", "Worker", "Supporter"]
 
+        # Validate dropdown values
         if branch_name not in valid_branches:
-            return "Invalid Branch Name", 400
+            return render_template('personal/register.html', error="Invalid Branch Name. Please select a valid option.")
         if standard not in valid_standards:
-            return "Invalid Standard", 400
+            return render_template('personal/register.html', error="Invalid Standard. Please select a valid option.")
 
         # Check if username or email already exists
         if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
-            return "Username or Email already exists", 400
+            return render_template('personal/register.html', error="Username or Email already exists.")
 
+        # Hash password and save user to database
         hashed_password = generate_password_hash(password)
-
-        # Add user to the database
         new_user = User(
             first_name=first_name,
             last_name=last_name,
@@ -100,9 +102,9 @@ def P_register():
         db.session.add(new_user)
         db.session.commit()
         return redirect(url_for('home'))
+
+    # Render the registration form
     return render_template('personal/register.html')
-
-
 
 
 @app.route('/personal/login', methods=['GET', 'POST'])
