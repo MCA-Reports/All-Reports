@@ -7,4 +7,3 @@ xhtml2pdf==0.2.8  # Optional if you want an alternative for PDF generation
 Jinja2==3.1.2
 itsdangerous==2.1.2
 gunicorn
-xhtml2pdf
