@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="report-options">
+    <div class="report-type">
+        <h3>Personal Report</h3>
+        <a href="{{ url_for('P_register') }}" class="button">Register</a>
+        <a href="{{ url_for('P_login') }}" class="button">Login</a>
+    </div>
+    <div class="report-type">
+        <h3>Branch Report</h3>
+        <a href="{{ url_for('B_register') }}" class="button">Register</a>
+        <a href="{{ url_for('B_login') }}" class="button">Login</a>
+    </div>
+    <div class="report-type">
+        <h3>Secretariate Report</h3>
+        <a href="{{ url_for('S_register') }}" class="button">Register</a>
+        <a href="{{ url_for('S_login') }}" class="button">Login</a>
+    </div>
+</div>
+{% endblock %}

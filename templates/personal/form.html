@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Personal Report Form{% endblock %}
+{% block content %}
+<h2>Add New Personal Report</h2>
+<form method="POST">
+    <label for="quran_ayat">Quran Ayat:</label>
+    <input type="number" id="quran_ayat" name="quran_ayat" required>
+    <label for="hadith_count">Hadith Count:</label>
+    <input type="number" id="hadith_count" name="hadith_count" required>
+    <label for="islamic_literature">Islamic Literature:</label>
+    <input type="text" id="islamic_literature" name="islamic_literature">
+    <label for="prayers">Prayers:</label>
+    <input type="number" id="prayers" name="prayers" required>
+    <label for="invitations">Invitations:</label>
+    <input type="number" id="invitations" name="invitations" required>
+    <label for="invitation_materials">Invitation Materials:</label>
+    <input type="number" id="invitation_materials" name="invitation_materials" required>
+    <label for="books_distributed">Books Distributed:</label>
+    <input type="number" id="books_distributed" name="books_distributed" required>
+    <label for="org_time_spent">Time Spent (Minutes):</label>
+    <input type="number" id="org_time_spent" name="org_time_spent" required>
+    <label for="family_meetings">Family Meetings:</label>
+    <input type="checkbox" id="family_meetings" name="family_meetings">
+    <button type="submit">Submit</button>
+</form>
+{% endblock %}

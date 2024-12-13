@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Personal Report Summary{% endblock %}
+{% block content %}
+<h2>Personal Report Summary</h2>
+{% if reports %}
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Quran Ayat</th>
+            <th>Hadith Count</th>
+            <th>Islamic Literature</th>
+            <th>Prayers</th>
+            <th>Invitations</th>
+            <th>Materials</th>
+            <th>Books</th>
+            <th>Time Spent</th>
+            <th>Family Meetings</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for report in reports %}
+        <tr>
+            <td>{{ report.date_posted.strftime('%Y-%m-%d') }}</td>
+            <td>{{ report.quran_ayat }}</td>
+            <td>{{ report.hadith_count }}</td>
+            <td>{{ report.islamic_literature or 'N/A' }}</td>
+            <td>{{ report.prayers }}</td>
+            <td>{{ report.invitations }}</td>
+            <td>{{ report.invitation_materials }}</td>
+            <td>{{ report.books_distributed }}</td>
+            <td>{{ report.org_time_spent }} minutes</td>
+            <td>{{ 'Yes' if report.family_meetings else 'No' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No reports available. <a href="{{ url_for('P_form') }}">Add a report</a>.</p>
+{% endif %}
+<a href="{{ url_for('P_form') }}" class="button">Add New Report</a>
+<a href="{{ url_for('logout') }}" class="button">Logout</a>
+{% endblock %}
