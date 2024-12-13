@@ -17,9 +17,16 @@ db = SQLAlchemy(app)
 # Database models
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(150), nullable=False)
+    last_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(150), unique=True, nullable=False)
+    mobile_no = db.Column(db.String(15), nullable=False)
+    branch_name = db.Column(db.String(150), nullable=False)
     username = db.Column(db.String(150), unique=True, nullable=False)
+    standard = db.Column(db.String(50), nullable=False)
     password = db.Column(db.String(150), nullable=False)
-    role = db.Column(db.String(50), nullable=False)  # personal, branch, secretariate
+    role = db.Column(db.String(50), nullable=False)  
+   
 
 
 class Report(db.Model):
@@ -35,6 +42,13 @@ class Report(db.Model):
     org_time_spent = db.Column(db.Integer, nullable=False)
     family_meetings = db.Column(db.Boolean, default=False)
     date_posted = db.Column(db.DateTime, default=db.func.current_timestamp())
+class Branch(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+
+class Standard(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
 
 # Home route
 @app.route('/')
@@ -47,16 +61,48 @@ def home():
 def P_register():
     """Handle registration for Personal Reports."""
     if request.method == 'POST':
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        email = request.form.get('email')
+        mobile_no = request.form.get('mobile_no')
+        branch_name = request.form.get('branch_name')
         username = request.form.get('username')
+        standard = request.form.get('standard')
         password = request.form.get('password')
-        if User.query.filter_by(username=username).first():
-            return "Username already exists", 400
+
+        # Validate dropdown values
+        valid_branches = ["North", "South", "East", "West"]
+        valid_standards = ["Beginner", "Intermediate", "Advanced"]
+
+        if branch_name not in valid_branches:
+            return "Invalid Branch Name", 400
+        if standard not in valid_standards:
+            return "Invalid Standard", 400
+
+        # Check if username or email already exists
+        if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
+            return "Username or Email already exists", 400
+
         hashed_password = generate_password_hash(password)
-        new_user = User(username=username, password=hashed_password, role='personal')
+
+        # Add user to the database
+        new_user = User(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            mobile_no=mobile_no,
+            branch_name=branch_name,
+            username=username,
+            standard=standard,
+            password=hashed_password,
+            role='personal'
+        )
         db.session.add(new_user)
         db.session.commit()
         return redirect(url_for('home'))
     return render_template('personal/register.html')
+
+
 
 
 @app.route('/personal/login', methods=['GET', 'POST'])
@@ -69,10 +115,11 @@ def P_login():
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['role'] = user.role
-            return redirect(url_for('P_form'))
+            return redirect(url_for('personal_dashboard'))
         else:
             return "Invalid credentials", 401
     return render_template('personal/login.html')
+
 
 
 @app.route('/personal/form', methods=['GET', 'POST'])
@@ -137,6 +184,13 @@ def P_summary_pdf():
     response = Response(open('summary.pdf', 'rb'), content_type='application/pdf')
     response.headers['Content-Disposition'] = 'inline; filename=personal_summary.pdf'
     return response
+
+@app.route('/personal/dashboard', methods=['GET'])
+def personal_dashboard():
+    """Render the Personal Dashboard."""
+    if 'user_id' not in session or session.get('role') != 'personal':
+        return redirect(url_for('P_login'))
+    return render_template('personal/dashboard.html')
 
 # Branch Report Routes
 @app.route('/branch/register', methods=['GET', 'POST'])

@@ -38,7 +38,4 @@
 {% else %}
 <p>No reports available. <a href="{{ url_for('P_form') }}">Add a report</a>.</p>
 {% endif %}
-<a href="{{ url_for('P_form') }}" class="button">Add New Report</a>
-<a href="{{ url_for('logout') }}" class="button">Logout</a>
-<a href="{{ url_for('P_summary_pdf') }}" class="button">Download as PDF</a>
 {% endblock %}
