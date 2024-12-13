@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from xhtml2pdf import pisa
 
+
 app = Flask(__name__)
 
 # Secret key for session management
