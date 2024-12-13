@@ -34,12 +34,11 @@ class Report(db.Model):
     family_meetings = db.Column(db.Boolean, default=False)
     date_posted = db.Column(db.DateTime, default=db.func.current_timestamp())
 
-# Routes
+# Home route
 @app.route('/')
 def home():
     """Render the homepage."""
     return render_template('home.html')
-
 
 # Personal Report Routes
 @app.route('/personal/register', methods=['GET', 'POST'])
@@ -68,7 +67,7 @@ def P_login():
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['role'] = user.role
-            return redirect(url_for('P_form'))  # Redirect to form page after login
+            return redirect(url_for('P_form'))
         else:
             return "Invalid credentials", 401
     return render_template('personal/login.html')
@@ -118,16 +117,79 @@ def P_summary():
     reports = Report.query.filter_by(user_id=user_id).all()
     return render_template('personal/summary.html', reports=reports)
 
+# Branch Report Routes
+@app.route('/branch/register', methods=['GET', 'POST'])
+def B_register():
+    """Handle registration for Branch Reports."""
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if User.query.filter_by(username=username).first():
+            return "Username already exists", 400
+        hashed_password = generate_password_hash(password)
+        new_user = User(username=username, password=hashed_password, role='branch')
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect(url_for('home'))
+    return render_template('branch/register.html')
 
+
+@app.route('/branch/login', methods=['GET', 'POST'])
+def B_login():
+    """Handle login for Branch Reports."""
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username, role='branch').first()
+        if user and check_password_hash(user.password, password):
+            session['user_id'] = user.id
+            session['role'] = user.role
+            return redirect(url_for('home'))  # Redirect to branch-specific page if needed
+        else:
+            return "Invalid credentials", 401
+    return render_template('branch/login.html')
+
+# Secretariate Report Routes
+@app.route('/secretariate/register', methods=['GET', 'POST'])
+def S_register():
+    """Handle registration for Secretariate Reports."""
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if User.query.filter_by(username=username).first():
+            return "Username already exists", 400
+        hashed_password = generate_password_hash(password)
+        new_user = User(username=username, password=hashed_password, role='secretariate')
+        db.session.add(new_user)
+        db.session.commit()
+        return redirect(url_for('home'))
+    return render_template('secretariate/register.html')
+
+
+@app.route('/secretariate/login', methods=['GET', 'POST'])
+def S_login():
+    """Handle login for Secretariate Reports."""
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username, role='secretariate').first()
+        if user and check_password_hash(user.password, password):
+            session['user_id'] = user.id
+            session['role'] = user.role
+            return redirect(url_for('home'))  # Redirect to secretariate-specific page if needed
+        else:
+            return "Invalid credentials", 401
+    return render_template('secretariate/login.html')
+
+# Logout Route
 @app.route('/logout')
 def logout():
     """Log out the user."""
     session.clear()
     return redirect(url_for('home'))
 
-
+# Initialize the database
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()  # Creates the database tables based on your models
     app.run(debug=True)
-
