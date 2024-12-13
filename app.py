@@ -127,6 +127,7 @@ def logout():
 
 
 if __name__ == '__main__':
-    # Uncomment the line below to initialize the database tables
-    # db.create_all()
+    with app.app_context():
+        db.create_all()  # Creates the database tables based on your models
     app.run(debug=True)
+
