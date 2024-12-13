@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, Response
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from xhtml2pdf import pisa
 
 app = Flask(__name__)
 
@@ -116,6 +117,25 @@ def P_summary():
     user_id = session['user_id']
     reports = Report.query.filter_by(user_id=user_id).all()
     return render_template('personal/summary.html', reports=reports)
+
+@app.route('/personal/summary/pdf', methods=['GET'])
+def P_summary_pdf():
+    if 'user_id' not in session or session.get('role') != 'personal':
+        return redirect(url_for('P_login'))
+    
+    user_id = session['user_id']
+    reports = Report.query.filter_by(user_id=user_id).all()
+    
+    # Render the HTML template for the PDF
+    rendered = render_template('personal/summary_pdf.html', reports=reports)
+    
+    # Convert HTML to PDF
+    pdf = pisa.CreatePDF(rendered, dest=open('summary.pdf', 'wb'))
+    
+    # Serve the PDF as a downloadable response
+    response = Response(open('summary.pdf', 'rb'), content_type='application/pdf')
+    response.headers['Content-Disposition'] = 'inline; filename=personal_summary.pdf'
+    return response
 
 # Branch Report Routes
 @app.route('/branch/register', methods=['GET', 'POST'])
