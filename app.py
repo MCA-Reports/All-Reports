@@ -189,18 +189,35 @@ def P_summary_pdf():
     month = request.args.get('month', type=int)
     year = request.args.get('year', type=int)
 
+    # Define the current year if no year is provided
+    current_year = datetime.now().year
+    month_name = None
+
+    # Query reports for the user
     query = Report.query.filter_by(user_id=user_id)
+
     if month and year:
         query = query.filter(
             func.strftime("%m", Report.date_posted) == f"{month:02d}",
             func.strftime("%Y", Report.date_posted) == str(year)
         )
+        month_name = ['January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'][month-1]
 
     reports = query.all()
+
     if not reports:
         return render_template('personal/summary_pdf.html', reports=[], error="No reports available.")
 
-    rendered_html = render_template('personal/summary_pdf.html', reports=reports, month=month, year=year)
+    # Render the template for PDF
+    rendered_html = render_template(
+        'personal/summary_pdf.html',
+        reports=reports,
+        month_name=month_name,
+        year=year or current_year
+    )
+
+    # Convert HTML to PDF
     pdf_file = BytesIO()
     pisa_status = pisa.CreatePDF(rendered_html.encode('utf-8'), dest=pdf_file, encoding='utf-8')
 
@@ -212,6 +229,7 @@ def P_summary_pdf():
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = 'inline; filename=personal_summary.pdf'
     return response
+
 
 @app.route('/personal/dashboard', methods=['GET'])
 def personal_dashboard():
