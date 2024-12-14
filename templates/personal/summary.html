@@ -1,7 +1,44 @@
 {% extends "base.html" %}
-{% block title %}Personal Report Summary{% endblock %}
+
+{% block title %}Summary{% endblock %}
+
 {% block content %}
-<h2>Personal Report Summary</h2>
+<h2>Report Summary</h2>
+
+<!-- Filter Form -->
+<form method="GET" action="{{ url_for('P_summary') }}" style="margin-bottom: 20px;">
+    <label for="month">Month:</label>
+    <select id="month" name="month" required>
+        <option value="">--Select Month--</option>
+        <option value="1" {% if month == 1 %}selected{% endif %}>January</option>
+        <option value="2" {% if month == 2 %}selected{% endif %}>February</option>
+        <option value="3" {% if month == 3 %}selected{% endif %}>March</option>
+        <option value="4" {% if month == 4 %}selected{% endif %}>April</option>
+        <option value="5" {% if month == 5 %}selected{% endif %}>May</option>
+        <option value="6" {% if month == 6 %}selected{% endif %}>June</option>
+        <option value="7" {% if month == 7 %}selected{% endif %}>July</option>
+        <option value="8" {% if month == 8 %}selected{% endif %}>August</option>
+        <option value="9" {% if month == 9 %}selected{% endif %}>September</option>
+        <option value="10" {% if month == 10 %}selected{% endif %}>October</option>
+        <option value="11" {% if month == 11 %}selected{% endif %}>November</option>
+        <option value="12" {% if month == 12 %}selected{% endif %}>December</option>
+    </select>
+
+    <label for="year">Year:</label>
+    <input type="number" id="year" name="year" min="2000" max="2100" value="{{ year }}" required>
+
+    <button type="submit">Filter</button>
+    <a href="{{ url_for('P_summary') }}" class="button" style="margin-left: 10px;">Reset Filter</a>
+</form>
+
+<!-- Filtered Date Range -->
+{% if month and year %}
+<h3>Showing reports for {{ month }}/{{ year }}</h3>
+{% else %}
+<h3>All Reports</h3>
+{% endif %}
+
+<!-- Report Table -->
 {% if reports %}
 <table>
     <thead>
@@ -21,7 +58,8 @@
     <tbody>
         {% for report in reports %}
         <tr>
-            <td>{{ report.date_posted.strftime('%Y-%m-%d') }}</td>
+            <!-- Use the correct date attribute from the model, e.g. 'report.date' -->
+            <td>{{ report.date.strftime('%Y-%m-%d') }}</td>
             <td>{{ report.quran_ayat }}</td>
             <td>{{ report.hadith_count }}</td>
             <td>{{ report.islamic_literature or 'N/A' }}</td>
@@ -38,4 +76,5 @@
 {% else %}
 <p>No reports available. <a href="{{ url_for('P_form') }}">Add a report</a>.</p>
 {% endif %}
+
 {% endblock %}

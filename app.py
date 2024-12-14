@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, R
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from xhtml2pdf import pisa
+from datetime import datetime
 
 
 app = Flask(__name__)
@@ -31,6 +32,7 @@ class User(db.Model):
 class Report(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date = db.Column(db.DateTime, default=datetime.utcnow)
     quran_ayat = db.Column(db.Integer, nullable=False)
     hadith_count = db.Column(db.Integer, nullable=False)
     islamic_literature = db.Column(db.String(255))
@@ -40,7 +42,7 @@ class Report(db.Model):
     books_distributed = db.Column(db.Integer, nullable=False)
     org_time_spent = db.Column(db.Integer, nullable=False)
     family_meetings = db.Column(db.Boolean, default=False)
-    date_posted = db.Column(db.DateTime, default=db.func.current_timestamp())
+    
 
 class Branch(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -162,11 +164,24 @@ def P_form():
 
 @app.route('/personal/summary', methods=['GET'])
 def P_summary():
-    """Render summary of Personal Reports."""
-    if 'user_id' not in session or session.get('role') != 'personal':
-        return redirect(url_for('P_login'))
-    user_id = session['user_id']
-    reports = Report.query.filter_by(user_id=user_id).all()
+    """Render summary of reports, filtered by month and year if provided."""
+    # Get month and year from query parameters
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
+
+    # Base query
+    query = Report.query
+
+    # Apply filters if month and year are provided
+    if month and year:
+        query = query.filter(
+            db.extract('month', Report.date) == month,
+            db.extract('year', Report.date) == year
+        )
+
+    # Fetch filtered or unfiltered reports
+    reports = query.all()
+
     return render_template('personal/summary.html', reports=reports)
 
 @app.route('/personal/summary/pdf', methods=['GET'])
@@ -194,6 +209,7 @@ def personal_dashboard():
     if 'user_id' not in session or session.get('role') != 'personal':
         return redirect(url_for('P_login'))
     return render_template('personal/dashboard.html')
+
 
 # Branch Report Routes
 @app.route('/branch/register', methods=['GET', 'POST'])
