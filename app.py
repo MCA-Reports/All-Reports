@@ -1,11 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, Response, make_response
+from flask import Flask, render_template, request, redirect, url_for, session, make_response
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from xhtml2pdf import pisa
 from io import BytesIO
 from datetime import datetime
 from sqlalchemy import func
-
 
 app = Flask(__name__)
 
@@ -16,6 +15,12 @@ app.secret_key = "your_secret_key"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bmcag_reports.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+# User roles constants
+class UserRole:
+    PERSONAL = 'personal'
+    BRANCH = 'branch'
+    SECRETARIATE = 'secretariate'
 
 # Database models
 class User(db.Model):
@@ -28,8 +33,7 @@ class User(db.Model):
     username = db.Column(db.String(150), unique=True, nullable=False)
     standard = db.Column(db.String(50), nullable=False)
     password = db.Column(db.String(150), nullable=False)
-    role = db.Column(db.String(50), nullable=False)  
-   
+    role = db.Column(db.String(50), nullable=False)
 
 class Report(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -44,7 +48,6 @@ class Report(db.Model):
     books_distributed = db.Column(db.Integer, nullable=False)
     org_time_spent = db.Column(db.Integer, nullable=False)
     family_meetings = db.Column(db.Boolean, default=False)
-    
 
 class Branch(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -57,13 +60,11 @@ class Standard(db.Model):
 # Home route
 @app.route('/')
 def home():
-    """Render the homepage."""
     return render_template('home.html')
 
 # Personal Report Routes
 @app.route('/personal/register', methods=['GET', 'POST'])
 def P_register():
-    """Handle registration for Personal Reports."""
     if request.method == 'POST':
         first_name = request.form.get('first_name')
         last_name = request.form.get('last_name')
@@ -74,24 +75,19 @@ def P_register():
         standard = request.form.get('standard')
         password = request.form.get('password')
 
-        # Define valid branches and standards
         valid_branches = [
-            "Central", "NRW", "Berlin", "Hessen", "Bremen", 
+            "Central", "NRW", "Berlin", "Hessen", "Bremen",
             "Hamburg", "Greater Germany", "Bravaria", "Women"
         ]
         valid_standards = ["Member", "Worker", "Supporter"]
 
-        # Validate dropdown values
         if branch_name not in valid_branches:
-            return render_template('personal/register.html', error="Invalid Branch Name. Please select a valid option.")
+            return render_template('personal/register.html', error="Invalid Branch Name.")
         if standard not in valid_standards:
-            return render_template('personal/register.html', error="Invalid Standard. Please select a valid option.")
-
-        # Check if username or email already exists
+            return render_template('personal/register.html', error="Invalid Standard.")
         if User.query.filter_by(username=username).first() or User.query.filter_by(email=email).first():
             return render_template('personal/register.html', error="Username or Email already exists.")
 
-        # Hash password and save user to database
         hashed_password = generate_password_hash(password)
         new_user = User(
             first_name=first_name,
@@ -102,37 +98,35 @@ def P_register():
             username=username,
             standard=standard,
             password=hashed_password,
-            role='personal'
+            role=UserRole.PERSONAL
         )
-        db.session.add(new_user)
-        db.session.commit()
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return f"Error: {e}", 500
+
         return redirect(url_for('home'))
-
-    # Render the registration form
     return render_template('personal/register.html')
-
 
 @app.route('/personal/login', methods=['GET', 'POST'])
 def P_login():
-    """Handle login for Personal Reports."""
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        user = User.query.filter_by(username=username, role='personal').first()
+        user = User.query.filter_by(username=username, role=UserRole.PERSONAL).first()
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['role'] = user.role
             return redirect(url_for('personal_dashboard'))
         else:
-            return "Invalid credentials", 401
+            return render_template('personal/login.html', error="Invalid credentials")
     return render_template('personal/login.html')
-
-
 
 @app.route('/personal/form', methods=['GET', 'POST'])
 def P_form():
-    """Render form for adding a new Personal Report."""
-    if 'user_id' not in session or session.get('role') != 'personal':
+    if 'user_id' not in session or session.get('role') != UserRole.PERSONAL:
         return redirect(url_for('P_login'))
     if request.method == 'POST':
         user_id = session['user_id']
@@ -144,7 +138,7 @@ def P_form():
         invitation_materials = request.form.get('invitation_materials')
         books_distributed = request.form.get('books_distributed')
         org_time_spent = request.form.get('org_time_spent')
-        family_meetings = bool(request.form.get('family_meetings'))
+        family_meetings = request.form.get('family_meetings') == 'on'
 
         new_report = Report(
             user_id=user_id,
@@ -158,69 +152,23 @@ def P_form():
             org_time_spent=org_time_spent,
             family_meetings=family_meetings
         )
-        db.session.add(new_report)
-        db.session.commit()
+        try:
+            db.session.add(new_report)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return f"Error: {e}", 500
+
         return redirect(url_for('P_summary'))
     return render_template('personal/form.html')
 
-
 @app.route('/personal/summary', methods=['GET'])
 def P_summary():
-    """Render summary of reports, filtered by month and year if provided."""
-    # Get month and year from query parameters
     month = request.args.get('month', type=int)
     year = request.args.get('year', type=int)
+    current_year = datetime.now().year
 
-    # Base query
-    query = Report.query
-
-    # Apply filters if month and year are provided
-    if month and year:
-        query = query.filter(
-            db.extract('month', Report.date_posted) == month,
-            db.extract('year', Report.date_posted) == year
-        )
-
-    # Fetch filtered or unfiltered reports
-    reports = query.all()
-
-    return render_template('personal/summary.html', reports=reports)
-
-@app.route('/personal/summary', methods=['GET'])
-def P_summary():
-    """Render summary of reports, filtered by month and year if provided."""
-    # Get month and year from query parameters
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
-
-    # Filter by logged-in user if required:
     user_id = session.get('user_id')
-    query = Report.query
-    if user_id and session.get('role') == 'personal':
-        query = query.filter_by(user_id=user_id)
-
-    # Apply filters if month and year are provided
-    if month and year:
-        query = query.filter(
-            func.strftime("%m", Report.date_posted) == f"{month:02d}",
-            func.strftime("%Y", Report.date_posted) == str(year)
-        )
-
-    # Fetch filtered or unfiltered reports
-    reports = query.all()
-
-    return render_template('personal/summary.html', reports=reports, month=month, year=year)
-
-
-@app.route('/personal/summary/pdf', methods=['GET'])
-def P_summary_pdf():
-    if 'user_id' not in session or session.get('role') != 'personal':
-        return redirect(url_for('P_login'))
-
-    user_id = session['user_id']
-    month = request.args.get('month', type=int)
-    year = request.args.get('year', type=int)
-
     query = Report.query.filter_by(user_id=user_id)
 
     if month and year:
@@ -230,20 +178,31 @@ def P_summary_pdf():
         )
 
     reports = query.all()
+    return render_template('personal/summary.html', reports=reports, month=month, year=year, current_year=current_year)
 
+@app.route('/personal/summary/pdf', methods=['GET'])
+def P_summary_pdf():
+    if 'user_id' not in session or session.get('role') != UserRole.PERSONAL:
+        return redirect(url_for('P_login'))
+
+    user_id = session['user_id']
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
+
+    query = Report.query.filter_by(user_id=user_id)
+    if month and year:
+        query = query.filter(
+            func.strftime("%m", Report.date_posted) == f"{month:02d}",
+            func.strftime("%Y", Report.date_posted) == str(year)
+        )
+
+    reports = query.all()
     if not reports:
-        return "You did not keep any reports for this month and year."
+        return render_template('personal/summary_pdf.html', reports=[], error="No reports available.")
 
-    # Render the template for PDF
     rendered_html = render_template('personal/summary_pdf.html', reports=reports, month=month, year=year)
-
-    # Convert HTML to PDF
     pdf_file = BytesIO()
-    pisa_status = pisa.CreatePDF(
-        rendered_html.encode('utf-8'),
-        dest=pdf_file,
-        encoding='utf-8'
-    )
+    pisa_status = pisa.CreatePDF(rendered_html.encode('utf-8'), dest=pdf_file, encoding='utf-8')
 
     if pisa_status.err:
         return "Error generating PDF", 500
@@ -256,8 +215,7 @@ def P_summary_pdf():
 
 @app.route('/personal/dashboard', methods=['GET'])
 def personal_dashboard():
-    """Render the Personal Dashboard."""
-    if 'user_id' not in session or session.get('role') != 'personal':
+    if 'user_id' not in session or session.get('role') != UserRole.PERSONAL:
         return redirect(url_for('P_login'))
     return render_template('personal/dashboard.html')
 
