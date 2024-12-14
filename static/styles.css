@@ -59,7 +59,6 @@ main {
 h1, h2, h3 {
     margin-bottom: 15px;
     color: #333;
-    text-align: center; /* Center align headings */
 }
 
 /* Buttons */
@@ -77,7 +76,7 @@ h1, h2, h3 {
     margin: 10px auto;
 }
 
-.button:hover {
+.button:hover, button:hover {
     background-color: #45a049;
 }
 
@@ -90,12 +89,6 @@ button {
     cursor: pointer;
     font-size: 1rem;
     transition: background-color 0.3s;
-    display: block;
-    margin: 10px auto;
-}
-
-button:hover {
-    background-color: #45a049;
 }
 
 /* Forms */
@@ -118,7 +111,7 @@ form input, form select {
     border: 1px solid #ccc;
     border-radius: 5px;
     font-size: 1rem;
-    width: 80%; /* Limit input width for better alignment */
+    width: 90%; /* Wider inputs for small screens */
 }
 
 form input[type="checkbox"] {
@@ -128,10 +121,10 @@ form input[type="checkbox"] {
 
 /* Tables */
 table {
-    width: 80%;
+    width: 90%;
     margin: 20px auto;
     border-collapse: collapse;
-    text-align: center; /* Center align table content */
+    text-align: center;
 }
 
 table th, table td {
@@ -154,6 +147,26 @@ table tr:hover {
     background-color: #f1f1f1;
 }
 
+/* Report Boxes */
+.report-type {
+    display: inline-block;
+    width: 100%;
+    max-width: 300px;
+    background-color: #ffffff;
+    border: 2px solid #4CAF50;
+    border-radius: 8px;
+    text-align: center;
+    padding: 20px;
+    margin: 10px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+}
+
+.report-type:hover {
+    transform: translateY(-5px); /* Slight lift effect */
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     header h1 {
@@ -165,17 +178,32 @@ table tr:hover {
         padding: 8px 12px;
     }
 
+    table, thead, tbody, th, td, tr {
+        display: block;
+        width: 100%;
+    }
+
     table th, table td {
-        font-size: 0.9rem;
-        padding: 8px;
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+    }
+
+    table th::before, table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        text-align: left;
+        font-weight: bold;
     }
 
     form {
-        width: 90%;
+        width: 100%;
     }
 
-    form input, form select {
-        font-size: 0.9rem;
+    .report-type {
+        width: 100%;
+        max-width: 100%;
     }
 }
 
@@ -197,45 +225,4 @@ table tr:hover {
     font-weight: bold;
     margin-top: 10px;
     text-align: center;
-}
-/* Report Type Box */
-.report-type {
-    display: inline-block;
-    width: 30%;
-    background-color: #ffffff;
-    border: 2px solid #4CAF50;
-    border-radius: 8px;
-    text-align: center;
-    padding: 20px;
-    margin: 10px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    cursor: pointer;
-}
-
-.report-type h3 {
-    margin-bottom: 15px;
-    color: #333;
-    font-size: 1.2rem;
-}
-
-.report-type a {
-    text-decoration: none;
-    display: inline-block;
-    padding: 10px 15px;
-    background-color: #4CAF50;
-    color: white;
-    border-radius: 5px;
-    font-size: 1rem;
-    transition: background-color 0.3s ease;
-}
-
-.report-type a:hover {
-    background-color: #45a049;
-}
-
-/* Hover Effect */
-.report-type:hover {
-    transform: translateY(-5px); /* Slight lift effect */
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2); /* Add shadow */
-    background-color: #f9f9f9; /* Optional: subtle background color change */
 }

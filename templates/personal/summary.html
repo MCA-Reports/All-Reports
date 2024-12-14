@@ -36,7 +36,7 @@
 <table>
     <thead>
         <tr>
-            <th>Date</th>
+            <th data-label="Date">Date</th>
             <th>Quran Ayat</th>
             <th>Hadith Count</th>
             <th>Islamic Literature</th>
@@ -51,7 +51,7 @@
     <tbody>
         {% for report in reports %}
         <tr>
-            <td>{{ report.date_posted.strftime('%Y-%m-%d') }}</td>
+            <td data-label="Date">{{ report.date_posted.strftime('%Y-%m-%d') }}</td>
             <td>{{ report.quran_ayat }}</td>
             <td>{{ report.hadith_count }}</td>
             <td>{{ report.islamic_literature or 'N/A' }}</td>
