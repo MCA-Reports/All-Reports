@@ -52,7 +52,7 @@
         <tbody>
             {% for report in reports %}
             <tr>
-                <td>{{ report.date_posted.strftime('%Y-%m-%d') }}</td>
+                <td>{{ report.date.strftime('%Y-%m-%d') }}</td>
                 <td>{{ report.quran_ayat }}</td>
                 <td>{{ report.hadith_count }}</td>
                 <td>{{ report.islamic_literature or 'N/A' }}</td>
