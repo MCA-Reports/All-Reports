@@ -4,17 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Report Summary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+        h1, h2, h3 {
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
     <h1>Report Summary</h1>
+
+    <!-- User Details -->
+    <h3>Name: {{ user.first_name }} {{ user.last_name }}</h3>
+
+    <!-- Filtered Month and Year -->
     {% if month_name and year %}
-        <h2>{{ month_name }} {{ year }}</h2>
+        <h3>{{ month_name }} {{ year }}</h3>
     {% else %}
-        <h2>All Reports</h2>
+        <h3>All Reports</h3>
     {% endif %}
 
+    <!-- Report Table -->
     {% if reports %}
-    <table border="1" cellpadding="5" cellspacing="0">
+    <table>
         <thead>
             <tr>
                 <th>Date</th>

@@ -193,6 +193,9 @@ def P_summary_pdf():
     current_year = datetime.now().year
     month_name = None
 
+    # Fetch the user details
+    user = User.query.get(user_id)
+
     # Query reports for the user
     query = Report.query.filter_by(user_id=user_id)
 
@@ -207,14 +210,15 @@ def P_summary_pdf():
     reports = query.all()
 
     if not reports:
-        return render_template('personal/summary_pdf.html', reports=[], error="No reports available.")
+        return render_template('personal/summary_pdf.html', reports=[], user=user, error="No reports available.")
 
     # Render the template for PDF
     rendered_html = render_template(
         'personal/summary_pdf.html',
         reports=reports,
         month_name=month_name,
-        year=year or current_year
+        year=year or current_year,
+        user=user
     )
 
     # Convert HTML to PDF
