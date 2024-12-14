@@ -1,8 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, Response
+from flask import Flask, render_template, request, redirect, url_for, session, Response, make_response
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from xhtml2pdf import pisa
+from io import BytesIO
 from datetime import datetime
+from sqlalchemy import func
 
 
 app = Flask(__name__)
@@ -32,7 +34,7 @@ class User(db.Model):
 class Report(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    date = db.Column(db.DateTime, default=datetime.utcnow)
+    date_posted = db.Column(db.DateTime, default=datetime.utcnow)
     quran_ayat = db.Column(db.Integer, nullable=False)
     hadith_count = db.Column(db.Integer, nullable=False)
     islamic_literature = db.Column(db.String(255))
@@ -175,8 +177,8 @@ def P_summary():
     # Apply filters if month and year are provided
     if month and year:
         query = query.filter(
-            db.extract('month', Report.date) == month,
-            db.extract('year', Report.date) == year
+            db.extract('month', Report.date_posted) == month,
+            db.extract('year', Report.date_posted) == year
         )
 
     # Fetch filtered or unfiltered reports
@@ -184,22 +186,71 @@ def P_summary():
 
     return render_template('personal/summary.html', reports=reports)
 
+@app.route('/personal/summary', methods=['GET'])
+def P_summary():
+    """Render summary of reports, filtered by month and year if provided."""
+    # Get month and year from query parameters
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
+
+    # Filter by logged-in user if required:
+    user_id = session.get('user_id')
+    query = Report.query
+    if user_id and session.get('role') == 'personal':
+        query = query.filter_by(user_id=user_id)
+
+    # Apply filters if month and year are provided
+    if month and year:
+        query = query.filter(
+            func.strftime("%m", Report.date_posted) == f"{month:02d}",
+            func.strftime("%Y", Report.date_posted) == str(year)
+        )
+
+    # Fetch filtered or unfiltered reports
+    reports = query.all()
+
+    return render_template('personal/summary.html', reports=reports, month=month, year=year)
+
+
 @app.route('/personal/summary/pdf', methods=['GET'])
 def P_summary_pdf():
     if 'user_id' not in session or session.get('role') != 'personal':
         return redirect(url_for('P_login'))
-    
+
     user_id = session['user_id']
-    reports = Report.query.filter_by(user_id=user_id).all()
-    
-    # Render the HTML template for the PDF
-    rendered = render_template('personal/summary_pdf.html', reports=reports)
-    
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
+
+    query = Report.query.filter_by(user_id=user_id)
+
+    if month and year:
+        query = query.filter(
+            func.strftime("%m", Report.date_posted) == f"{month:02d}",
+            func.strftime("%Y", Report.date_posted) == str(year)
+        )
+
+    reports = query.all()
+
+    if not reports:
+        return "You did not keep any reports for this month and year."
+
+    # Render the template for PDF
+    rendered_html = render_template('personal/summary_pdf.html', reports=reports, month=month, year=year)
+
     # Convert HTML to PDF
-    pdf = pisa.CreatePDF(rendered, dest=open('summary.pdf', 'wb'))
-    
-    # Serve the PDF as a downloadable response
-    response = Response(open('summary.pdf', 'rb'), content_type='application/pdf')
+    pdf_file = BytesIO()
+    pisa_status = pisa.CreatePDF(
+        rendered_html.encode('utf-8'),
+        dest=pdf_file,
+        encoding='utf-8'
+    )
+
+    if pisa_status.err:
+        return "Error generating PDF", 500
+
+    pdf_file.seek(0)
+    response = make_response(pdf_file.read())
+    response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = 'inline; filename=personal_summary.pdf'
     return response
 
